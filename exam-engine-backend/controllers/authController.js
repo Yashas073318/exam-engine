@@ -1,5 +1,6 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt    = require('jsonwebtoken');
+const User   = require('../models/User');
+const logger = require('../utils/logger');
 
 /** Generate a signed JWT for a user */
 const signToken = (id) =>
@@ -17,11 +18,14 @@ const register = async (req, res) => {
 
     const exists = await User.findOne({ email });
     if (exists) {
+      logger.warn('Registration failed — email already in use', { email });
       return res.status(400).json({ message: 'Email already registered' });
     }
 
     const user = await User.create({ name, email, password, role });
     const token = signToken(user._id);
+
+    logger.info('New user registered', { userId: user._id, email: user.email, role: user.role });
 
     res.status(201).json({
       token,
@@ -33,6 +37,7 @@ const register = async (req, res) => {
       },
     });
   } catch (err) {
+    logger.error('register error', { message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -48,10 +53,13 @@ const login = async (req, res) => {
     // Explicitly select password (it's hidden with select:false on the model)
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
+      logger.warn('Login failed — bad credentials', { email });
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const token = signToken(user._id);
+
+    logger.info('User logged in', { userId: user._id, email: user.email, role: user.role });
 
     res.status(200).json({
       token,
@@ -63,6 +71,7 @@ const login = async (req, res) => {
       },
     });
   } catch (err) {
+    logger.error('login error', { message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };

@@ -1,5 +1,6 @@
-const Exam = require('../models/Exam');
+const Exam     = require('../models/Exam');
 const Question = require('../models/Question');
+const logger   = require('../utils/logger');
 
 /**
  * GET /api/exams
@@ -12,8 +13,10 @@ const getExams = async (req, res) => {
     const exams = await Exam.find(filter)
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
+    logger.debug('getExams', { role: req.user.role, count: exams.length });
     res.status(200).json(exams);
   } catch (err) {
+    logger.error('getExams error', { message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -37,6 +40,7 @@ const getExamById = async (req, res) => {
 
     res.status(200).json(exam);
   } catch (err) {
+    logger.error('getExamById error', { examId: req.params.id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -64,8 +68,10 @@ const createExam = async (req, res) => {
       createdBy: req.user._id,
     });
 
+    logger.info('Exam created', { examId: exam._id, title: exam.title, createdBy: req.user._id });
     res.status(201).json(exam);
   } catch (err) {
+    logger.error('createExam error', { message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -81,8 +87,10 @@ const updateExam = async (req, res) => {
       runValidators: true,
     });
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    logger.info('Exam updated', { examId: req.params.id, changes: req.body });
     res.status(200).json(exam);
   } catch (err) {
+    logger.error('updateExam error', { examId: req.params.id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -94,8 +102,10 @@ const deleteExam = async (req, res) => {
   try {
     const exam = await Exam.findByIdAndDelete(req.params.id);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    logger.info('Exam deleted', { examId: req.params.id, title: exam.title });
     res.status(200).json({ message: 'Exam deleted' });
   } catch (err) {
+    logger.error('deleteExam error', { examId: req.params.id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -113,6 +123,7 @@ const getQuestions = async (req, res) => {
       .populate('createdBy', 'name');
     res.status(200).json(questions);
   } catch (err) {
+    logger.error('getQuestions error', { message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -127,8 +138,10 @@ const createQuestion = async (req, res) => {
       ...req.body,
       createdBy: req.user._id,
     });
+    logger.info('Question created', { questionId: question._id, topic: question.topic, difficulty: question.difficulty });
     res.status(201).json(question);
   } catch (err) {
+    logger.warn('createQuestion validation error', { message: err.message });
     res.status(400).json({ message: err.message });
   }
 };
@@ -140,8 +153,10 @@ const deleteQuestion = async (req, res) => {
   try {
     const q = await Question.findByIdAndDelete(req.params.id);
     if (!q) return res.status(404).json({ message: 'Question not found' });
+    logger.info('Question deleted', { questionId: req.params.id });
     res.status(200).json({ message: 'Question deleted' });
   } catch (err) {
+    logger.error('deleteQuestion error', { questionId: req.params.id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };

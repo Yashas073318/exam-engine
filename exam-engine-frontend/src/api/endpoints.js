@@ -34,7 +34,8 @@ export const attemptAPI = {
 
 // ── Analytics ─────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  leaderboard: (examId) => api.get(`/analytics/leaderboard/${examId}`),
-  insights:    ()       => api.get('/analytics/insights'),
-  summary:     ()       => api.get('/analytics/summary'),
+  leaderboard:       (examId) => api.get(`/analytics/leaderboard/${examId}`),
+  scoreDistribution: (examId) => api.get(`/analytics/score-distribution/${examId}`),
+  insights:          ()       => api.get('/analytics/insights'),
+  summary:           ()       => api.get('/analytics/summary'),
 };

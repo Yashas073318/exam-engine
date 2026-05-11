@@ -5,6 +5,7 @@ const {
   getLeaderboard,
   getQuestionInsights,
   getSummary,
+  getScoreDistribution,
 } = require('../controllers/analyticsController');
 
 // All analytics routes are admin-only
@@ -18,5 +19,8 @@ router.get('/insights', getQuestionInsights);
 
 // GET /api/analytics/summary              — quick platform stats
 router.get('/summary', getSummary);
+
+// GET /api/analytics/score-distribution/:examId  — $bucket histogram of scores
+router.get('/score-distribution/:examId', getScoreDistribution);
 
 module.exports = router;

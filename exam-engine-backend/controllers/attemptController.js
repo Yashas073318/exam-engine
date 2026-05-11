@@ -1,6 +1,7 @@
 const Attempt = require('../models/Attempt');
-const User = require('../models/User');
+const User    = require('../models/User');
 const { startSession } = require('../config/db');
+const logger  = require('../utils/logger');
 
 /**
  * POST /api/attempts
@@ -28,6 +29,7 @@ const submitAttempt = async (req, res) => {
     if (existing) {
       await session.abortTransaction();
       session.endSession();
+      logger.warn('Duplicate attempt blocked', { userId: req.user._id, examId });
       return res.status(400).json({ message: 'You have already submitted this exam' });
     }
 
@@ -66,7 +68,9 @@ const submitAttempt = async (req, res) => {
     } catch (err) {
       // If error is about transactions not being supported (e.g. standalone node)
       if (err.message.includes('Transaction') || err.message.includes('replica set')) {
-        console.warn('⚠️ MongoDB is not a replica set. Falling back to non-transactional writes.');
+        logger.warn('MongoDB not a replica set — falling back to non-transactional writes', {
+          userId: req.user._id, examId,
+        });
         await session.abortTransaction();
         usedTransaction = false;
 
@@ -98,13 +102,24 @@ const submitAttempt = async (req, res) => {
     // Populate for response
     const populated = await Attempt.findById(attempt._id)
       .populate('exam', 'title passMark')
-      .populate('answers.questionId', 'text topic explanation');
+      .populate('answers.questionId', 'text topic explanation +correctOption');
+
+    logger.info('Attempt submitted', {
+      attemptId:    attempt._id,
+      userId:       req.user._id,
+      examId,
+      score:        attempt.score,
+      correct:      attempt.correctAnswers,
+      total:        attempt.totalQuestions,
+      transactional: usedTransaction,
+    });
 
     res.status(201).json(populated);
   } catch (err) {
     // ── Abort: neither write persists ─────────────────────────────────────────
     await session.abortTransaction();
     session.endSession();
+    logger.error('submitAttempt error', { userId: req.user._id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -120,6 +135,7 @@ const getMyAttempts = async (req, res) => {
       .sort({ submittedAt: -1 });
     res.status(200).json(attempts);
   } catch (err) {
+    logger.error('getMyAttempts error', { userId: req.user._id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
@@ -133,7 +149,7 @@ const getAttemptById = async (req, res) => {
     const attempt = await Attempt.findById(req.params.id)
       .populate('exam', 'title passMark timeLimit')
       .populate('user', 'name email')
-      .populate('answers.questionId', 'text options topic explanation');
+      .populate('answers.questionId', 'text options topic explanation +correctOption');
 
     if (!attempt) return res.status(404).json({ message: 'Attempt not found' });
 
@@ -147,6 +163,7 @@ const getAttemptById = async (req, res) => {
 
     res.status(200).json(attempt);
   } catch (err) {
+    logger.error('getAttemptById error', { attemptId: req.params.id, message: err.message, stack: err.stack });
     res.status(500).json({ message: err.message });
   }
 };
