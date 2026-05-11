@@ -4,7 +4,7 @@ A production-grade exam platform demonstrating complex Mongoose patterns: relati
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start Guide ()
 
 ### 1. Prerequisites
 - **Node.js** (v16+)
