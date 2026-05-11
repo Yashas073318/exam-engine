@@ -24,12 +24,18 @@ const AttemptSchema = new Schema(
       required: [true, 'Answers are required'],
     },
 
-    // ── Computed by pre-save middleware — NEVER trusted from client ───────────
-    score:           { type: Number },   // 0–100 percentage
+    // Computed by pre-save middleware
+    score:           { type: Number },
     correctAnswers:  { type: Number },
     totalQuestions:  { type: Number },
+    
+    status: {
+      type: String,
+      enum: ['completed', 'terminated'],
+      default: 'completed'
+    },
 
-    timeTaken:   { type: Number },       // seconds elapsed
+    timeTaken:   { type: Number },
     submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

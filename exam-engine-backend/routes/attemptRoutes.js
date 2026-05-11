@@ -5,10 +5,14 @@ const {
   submitAttempt,
   getMyAttempts,
   getAttemptById,
+  logViolation,
 } = require('../controllers/attemptController');
 
 // POST /api/attempts          — student submits exam (ACID transaction inside)
 router.post('/', protect, requireRole('student'), submitAttempt);
+
+// POST /api/attempts/violation — log proctoring violation
+router.post('/violation', protect, requireRole('student'), logViolation);
 
 // GET  /api/attempts/my       — student views their own history
 router.get('/my', protect, requireRole('student'), getMyAttempts);

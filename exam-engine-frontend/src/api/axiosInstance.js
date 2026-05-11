@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://10.10.20.116:5000/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -19,13 +19,19 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isAuthEndpoint = error.config?.url?.includes('/auth/');
+
+    // Only force-logout when the 401 comes from a PROTECTED route,
+    // not from login/register themselves (those 401s are expected on bad creds)
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('ee_token');
       localStorage.removeItem('ee_user');
       window.location.href = '/login';
     }
+
     return Promise.reject(error);
   }
 );
+
 
 export default axiosInstance;

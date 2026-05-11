@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 
@@ -7,15 +7,46 @@ const Login = ({ onAuthSuccess }) => {
   const [form, setForm]   = useState({ name: '', email: '', password: '', role: 'student' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [shaking, setShaking] = useState(false);
+
+  // Ref-based lock: keeps error visible even if something triggers re-render
+  const errorLockRef  = useRef(false);
+  const errorTimerRef = useRef(null);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const showError = (msg) => {
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+
+    errorLockRef.current = true;
+    setError(msg);
+
+    // Shake the box
+    setShaking(true);
+    setTimeout(() => setShaking(false), 600);
+
+    // Auto-dismiss after 8 seconds
+    errorTimerRef.current = setTimeout(() => {
+      errorLockRef.current = false;
+      setError('');
+    }, 8000);
+  };
+
+  const dismissError = () => {
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorLockRef.current = false;
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+
+    // Only clear the old error if the lock has expired
+    if (!errorLockRef.current) setError('');
+
     setLoading(true);
     try {
       let user;
@@ -24,10 +55,11 @@ const Login = ({ onAuthSuccess }) => {
       } else {
         user = await login(form.email, form.password);
       }
+      dismissError();
       onAuthSuccess(user);
       navigate(user.role === 'admin' ? '/admin/questions' : '/student/exams');
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      showError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -35,13 +67,25 @@ const Login = ({ onAuthSuccess }) => {
 
   return (
     <div className="login-page">
-      <div className="login-box">
+      <div className={`login-box${shaking ? ' shake' : ''}`}>
         <div className="login-logo">
           <h1>ExamEngine</h1>
           <p>Advanced MERN · Mongoose · Aggregations · Transactions</p>
         </div>
 
-        {error && <div className="error-msg">⚠️ {error}</div>}
+        {error && (
+          <div className="error-msg" role="alert">
+            <span className="error-msg-icon">&#9888;&#65039;</span>
+            <span className="error-msg-text">{error}</span>
+            <button
+              className="error-msg-close"
+              aria-label="Dismiss error"
+              onClick={dismissError}
+            >
+              &#x2715;
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {isRegister && (
@@ -81,7 +125,7 @@ const Login = ({ onAuthSuccess }) => {
               className="form-input"
               name="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
               value={form.password}
               onChange={handleChange}
               required
@@ -111,7 +155,7 @@ const Login = ({ onAuthSuccess }) => {
             style={{ marginTop: '0.5rem' }}
             disabled={loading}
           >
-            {loading ? '⏳ Please wait...' : isRegister ? '🚀 Create Account' : '🔐 Sign In'}
+            {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 
@@ -119,7 +163,7 @@ const Login = ({ onAuthSuccess }) => {
           {isRegister ? 'Already have an account? ' : "Don't have an account? "}
           <button
             id="login-toggle-btn"
-            onClick={() => setIsRegister(!isRegister)}
+            onClick={() => { setIsRegister(!isRegister); dismissError(); }}
             style={{ background: 'none', border: 'none', color: 'var(--accent-light)', fontWeight: 600, cursor: 'pointer' }}
           >
             {isRegister ? 'Sign In' : 'Register'}

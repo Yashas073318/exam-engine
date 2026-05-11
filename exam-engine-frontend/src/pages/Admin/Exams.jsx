@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { examAPI, questionAPI } from '../../api/endpoints';
 
-const emptyForm = { title: '', description: '', timeLimit: 15, passMark: 60, questions: [] };
+const emptyForm = { title: '', description: '', timeLimit: 15, passMark: 60, questions: [], mode: 'open' };
 
 const AdminExams = () => {
   const [exams, setExams]         = useState([]);
@@ -10,6 +10,7 @@ const AdminExams = () => {
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(emptyForm);
   const [saving, setSaving]       = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
     const [e, q] = await Promise.all([examAPI.getAll(), questionAPI.getAll()]);
@@ -28,11 +29,35 @@ const AdminExams = () => {
     }));
   };
 
+  const handleEdit = (exam) => {
+    setEditingId(exam._id);
+    setForm({
+      title: exam.title,
+      description: exam.description || '',
+      timeLimit: exam.timeLimit,
+      passMark: exam.passMark,
+      questions: exam.questions?.map(q => typeof q === 'object' ? q._id : q) || [],
+      mode: exam.mode || 'open'
+    });
+    setShowForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true);
     try {
-      await examAPI.create(form);
-      setForm(emptyForm); setShowForm(false); load();
+      if (editingId) {
+        await examAPI.update(editingId, form);
+      } else {
+        await examAPI.create(form);
+      }
+      cancelEdit();
+      load();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
     finally { setSaving(false); }
   };
@@ -55,16 +80,18 @@ const AdminExams = () => {
       <div className="page-header flex-between">
         <div>
           <h1>Exam Management</h1>
-          <p>Create exams by selecting questions from the bank.</p>
+          <p>Create and edit exams by selecting questions from the bank.</p>
         </div>
-        <button id="add-exam-btn" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button id="add-exam-btn" className="btn btn-primary" onClick={() => showForm ? cancelEdit() : setShowForm(true)}>
           {showForm ? '✕ Cancel' : '+ New Exam'}
         </button>
       </div>
 
       {showForm && (
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <div className="card-title" style={{ marginBottom: '1.25rem' }}>New Exam</div>
+          <div className="card-title" style={{ marginBottom: '1.25rem' }}>
+            {editingId ? 'Edit Exam' : 'New Exam'}
+          </div>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">Title</label>
@@ -78,7 +105,7 @@ const AdminExams = () => {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Optional description" style={{ minHeight: 60 }} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Time Limit (minutes)</label>
                 <input className="form-input" type="number" min="1" required value={form.timeLimit}
@@ -88,6 +115,14 @@ const AdminExams = () => {
                 <label className="form-label">Pass Mark (%)</label>
                 <input className="form-input" type="number" min="0" max="100" value={form.passMark}
                   onChange={(e) => setForm({ ...form, passMark: +e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Exam Mode</label>
+                <select className="form-select" value={form.mode}
+                  onChange={(e) => setForm({ ...form, mode: e.target.value })}>
+                  <option value="open">Open (No tracking)</option>
+                  <option value="proctored">Proctored (Strict monitoring)</option>
+                </select>
               </div>
             </div>
 
@@ -129,7 +164,7 @@ const AdminExams = () => {
             </div>
 
             <button id="save-exam-btn" type="submit" className="btn btn-primary" disabled={saving || form.questions.length === 0}>
-              {saving ? 'Saving...' : '💾 Create Exam'}
+              {saving ? 'Saving...' : (editingId ? '💾 Update Exam' : '💾 Create Exam')}
             </button>
           </form>
         </div>
@@ -159,6 +194,8 @@ const AdminExams = () => {
                       onClick={() => togglePublish(exam)}>
                       {exam.isPublished ? 'Unpublish' : 'Publish'}
                     </button>
+                    <button id={`edit-exam-${exam._id}`}
+                      className="btn btn-outline btn-sm" onClick={() => handleEdit(exam)}>Edit</button>
                     <button id={`delete-exam-${exam._id}`}
                       className="btn btn-danger btn-sm" onClick={() => handleDelete(exam._id)}>Delete</button>
                   </td>

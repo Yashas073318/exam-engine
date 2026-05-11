@@ -13,7 +13,8 @@ const ActiveExam = () => {
   const [answers, setAnswers]     = useState({});  // { questionId: selectedOption }
   const [currentIdx, setCurrentIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [startTime]               = useState(Date.now());
+  const [startTime]                 = useState(Date.now());
+  const [violationCount, setViolationCount] = useState(0);
 
   const submittingRef = useRef(false);
 
@@ -29,7 +30,7 @@ const ActiveExam = () => {
   };
 
   // ── Auto-submit when timer expires ─────────────────────────────────────────
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (statusOverride = 'completed') => {
     if (submittingRef.current) return;  // prevent double-submit
     submittingRef.current = true;
     setSubmitting(true);
@@ -45,6 +46,7 @@ const ActiveExam = () => {
         examId: id,
         answers: answersArray,
         timeTaken,
+        status: typeof statusOverride === 'string' ? statusOverride : 'completed'
       });
       navigate(`/student/results/${data._id}`);
     } catch (err) {
@@ -53,6 +55,32 @@ const ActiveExam = () => {
       submittingRef.current = false;
     }
   }, [answers, id, startTime, navigate]);
+
+  // ── Proctoring Logic ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!exam || exam.mode !== 'proctored') return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        const nextCount = violationCount + 1;
+        setViolationCount(nextCount);
+
+        // 1. Log violation to backend regardless of count
+        await attemptAPI.logViolation({ examId: id, type: 'tab_switch' }).catch(console.error);
+
+        // 2. Enforcement Logic
+        if (nextCount === 1) {
+          alert("⚠️ WARNING: Tab switching is forbidden. One more switch will end your exam.");
+        } else if (nextCount >= 2) {
+          alert("🚨 EXAM TERMINATED: You have exceeded the allowed tab switches.");
+          handleSubmit('terminated');
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [exam, violationCount, id, handleSubmit]);
 
   if (loading) return <div className="loading">Loading exam...</div>;
   if (!exam)   return null;

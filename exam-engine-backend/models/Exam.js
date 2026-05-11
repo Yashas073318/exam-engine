@@ -42,6 +42,11 @@ const ExamSchema = new Schema(
       ref: 'User',
       required: true,
     },
+    mode: {
+      type: String,
+      enum: ['open', 'proctored'],
+      default: 'open'
+    },
   },
   { timestamps: true }
 );

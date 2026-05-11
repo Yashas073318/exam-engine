@@ -147,6 +147,24 @@ const createQuestion = async (req, res) => {
 };
 
 /**
+ * PATCH /api/questions/:id  [Admin only]
+ */
+const updateQuestion = async (req, res) => {
+  try {
+    const question = await Question.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!question) return res.status(404).json({ message: 'Question not found' });
+    logger.info('Question updated', { questionId: req.params.id, changes: req.body });
+    res.status(200).json(question);
+  } catch (err) {
+    logger.error('updateQuestion error', { questionId: req.params.id, message: err.message, stack: err.stack });
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
  * DELETE /api/questions/:id  [Admin only]
  */
 const deleteQuestion = async (req, res) => {
@@ -169,5 +187,6 @@ module.exports = {
   deleteExam,
   getQuestions,
   createQuestion,
+  updateQuestion,
   deleteQuestion,
 };

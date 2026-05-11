@@ -20,16 +20,18 @@ export const examAPI = {
 
 // ── Questions ─────────────────────────────────────────────────────────────
 export const questionAPI = {
-  getAll:  ()      => api.get('/questions'),
-  create:  (data)  => api.post('/questions', data),
-  remove:  (id)    => api.delete(`/questions/${id}`),
+  getAll:  ()          => api.get('/questions'),
+  create:  (data)      => api.post('/questions', data),
+  update:  (id, data)  => api.patch(`/questions/${id}`, data),
+  remove:  (id)        => api.delete(`/questions/${id}`),
 };
 
 // ── Attempts ──────────────────────────────────────────────────────────────
 export const attemptAPI = {
-  submit:    (data)  => api.post('/attempts', data),
-  getMyAll:  ()      => api.get('/attempts/my'),
-  getById:   (id)    => api.get(`/attempts/${id}`),
+  submit:       (data)  => api.post('/attempts', data),
+  getMyAll:     ()      => api.get('/attempts/my'),
+  getById:      (id)    => api.get(`/attempts/${id}`),
+  logViolation: (data)  => api.post('/attempts/violation', data),
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────

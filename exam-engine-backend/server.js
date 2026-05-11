@@ -1,21 +1,21 @@
 require('dotenv').config();
 const express = require('express');
-const cors    = require('cors');
-const morgan  = require('morgan');
+const cors = require('cors');
+const morgan = require('morgan');
 const { connectDB } = require('./config/db');
-const logger  = require('./utils/logger');
+const logger = require('./utils/logger');
 
 // ── Route imports ────────────────────────────────────────────────────────────
-const authRoutes      = require('./routes/authRoutes');
-const examRoutes      = require('./routes/examRoutes');
-const questionRoutes  = require('./routes/questionRoutes');
-const attemptRoutes   = require('./routes/attemptRoutes');
+const authRoutes = require('./routes/authRoutes');
+const examRoutes = require('./routes/examRoutes');
+const questionRoutes = require('./routes/questionRoutes');
+const attemptRoutes = require('./routes/attemptRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 
 // ── Global Middleware ────────────────────────────────────────────────────────
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // ── HTTP Request Logging (Morgan → Winston) ──────────────────────────────────
@@ -37,10 +37,10 @@ app.get('/api/health', (_req, res) =>
 );
 
 // ── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/auth',      authRoutes);
-app.use('/api/exams',     examRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/exams', examRoutes);
 app.use('/api/questions', questionRoutes);
-app.use('/api/attempts',  attemptRoutes);
+app.use('/api/attempts', attemptRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // ── 404 handler ──────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ app.use((req, res) => {
 app.use((err, req, res, _next) => {
   logger.error(`Unhandled error on ${req.method} ${req.originalUrl}`, {
     message: err.message,
-    stack:   err.stack,
+    stack: err.stack,
   });
   res.status(err.status || 500).json({ message: err.message || 'Server Error' });
 });

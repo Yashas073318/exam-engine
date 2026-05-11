@@ -16,6 +16,7 @@ const AdminQuestions = () => {
   const [form, setForm]           = useState(emptyForm);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
+  const [editingId, setEditingId] = useState(null);
 
   const load = () => {
     questionAPI.getAll()
@@ -33,15 +34,43 @@ const AdminQuestions = () => {
     }));
   };
 
+  const handleEdit = (q) => {
+    setEditingId(q._id);
+    setForm({
+      text: q.text,
+      topic: q.topic,
+      difficulty: q.difficulty,
+      explanation: q.explanation || '',
+      correctOption: q.correctOption,
+      // map over LABELS to ensure we always have A, B, C, D in the form state
+      options: LABELS.map((l) => ({
+        label: l,
+        text: q.options?.find((o) => o.label === l)?.text || ''
+      })),
+    });
+    setShowForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(false);
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true); setError('');
     try {
-      await questionAPI.create(form);
-      setForm(emptyForm); setShowForm(false);
+      if (editingId) {
+        await questionAPI.update(editingId, form);
+      } else {
+        await questionAPI.create(form);
+      }
+      cancelEdit();
       load();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create question');
+      setError(err.response?.data?.message || 'Failed to save question');
     } finally { setSaving(false); }
   };
 
@@ -58,17 +87,19 @@ const AdminQuestions = () => {
       <div className="page-header flex-between">
         <div>
           <h1>Question Bank</h1>
-          <p>Create and manage atomic question units.</p>
+          <p>Create, edit, and manage atomic question units.</p>
         </div>
-        <button id="add-question-btn" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button id="add-question-btn" className="btn btn-primary" onClick={() => showForm ? cancelEdit() : setShowForm(true)}>
           {showForm ? '✕ Cancel' : '+ New Question'}
         </button>
       </div>
 
-      {/* ── Create form ────────────────────────────────────────────────────── */}
+      {/* ── Create / Edit form ────────────────────────────────────────────────────── */}
       {showForm && (
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <div className="card-title" style={{ marginBottom: '1.25rem' }}>New Question</div>
+          <div className="card-title" style={{ marginBottom: '1.25rem' }}>
+            {editingId ? 'Edit Question' : 'New Question'}
+          </div>
           {error && <div className="error-msg">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -125,7 +156,7 @@ const AdminQuestions = () => {
             </div>
 
             <button id="save-question-btn" type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : '💾 Save Question'}
+              {saving ? 'Saving...' : (editingId ? '💾 Update Question' : '💾 Save Question')}
             </button>
           </form>
         </div>
@@ -141,7 +172,7 @@ const AdminQuestions = () => {
                 <th>Topic</th>
                 <th>Difficulty</th>
                 <th>Correct</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -151,7 +182,9 @@ const AdminQuestions = () => {
                   <td><span className="badge badge-info">{q.topic}</span></td>
                   <td><span className={`badge ${diffBadge[q.difficulty]}`}>{q.difficulty}</span></td>
                   <td style={{ fontWeight: 700, color: 'var(--accent-light)' }}>{q.correctOption}</td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button id={`edit-q-${q._id}`} className="btn btn-outline btn-sm"
+                      onClick={() => handleEdit(q)}>Edit</button>
                     <button id={`delete-q-${q._id}`} className="btn btn-danger btn-sm"
                       onClick={() => handleDelete(q._id)}>Delete</button>
                   </td>

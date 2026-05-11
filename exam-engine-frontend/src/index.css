@@ -2,6 +2,36 @@
 
 /* ── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
+  --bg-base:       #f8fafc;
+  --bg-surface:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-hover:      #f1f5f9;
+  --border:        #e2e8f0;
+  --border-subtle: #f1f5f9;
+
+  --accent:        #6c63ff;
+  --accent-light:  #5a52d5;
+  --accent-glow:   rgba(108, 99, 255, 0.15);
+  --success:       #10b981;
+  --warning:       #f59e0b;
+  --danger:        #ef4444;
+  --info:          #3b82f6;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --shadow-card: 0 4px 20px rgba(0,0,0,0.05);
+  --shadow-glow: 0 0 24px rgba(108, 99, 255, 0.1);
+
+  --bg-navbar:    rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] {
   --bg-base:       #0d0f14;
   --bg-surface:    #13161e;
   --bg-card:       #1a1e2a;
@@ -21,12 +51,10 @@
   --text-secondary: #8892b0;
   --text-muted:     #4a5578;
 
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-
   --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
   --shadow-glow: 0 0 32px rgba(108, 99, 255, 0.15);
+
+  --bg-navbar:    rgba(19, 22, 30, 0.85);
 }
 
 /* ── Reset ──────────────────────────────────────────────────────────────────── */
@@ -75,7 +103,7 @@ button { cursor: pointer; font-family: inherit; }
   position: fixed;
   top: 0; left: 240px; right: 0;
   height: 64px;
-  background: rgba(19, 22, 30, 0.85);
+  background: var(--bg-navbar);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -515,6 +543,21 @@ tbody tr:last-child td { border-bottom: none; }
   50%       { opacity: 0.6; }
 }
 
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px) scaleY(0.95); }
+  to   { opacity: 1; transform: translateY(0)   scaleY(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-6px); }
+  30%       { transform: translateX(6px); }
+  45%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  75%       { transform: translateX(-2px); }
+  90%       { transform: translateX(2px); }
+}
+
 /* ── Progress Bar ────────────────────────────────────────────────────────────── */
 .progress-bar-wrap {
   background: var(--bg-surface);
@@ -572,13 +615,47 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .error-msg {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.3);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.4);
   color: var(--danger);
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+  animation: slideDown 0.25s ease forwards;
+}
+
+.error-msg-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-msg-text {
+  flex: 1;
+}
+
+.error-msg-close {
+  background: none;
+  border: none;
+  color: var(--danger);
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+.error-msg-close:hover { opacity: 1; }
+
+.login-box.shake {
+  animation: shake 0.5s ease;
 }
 
 /* ── Exam list ───────────────────────────────────────────────────────────────── */

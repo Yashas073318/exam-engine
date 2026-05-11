@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import useAuth from './hooks/useAuth';
 import Sidebar from './components/Layout/Sidebar';
@@ -24,11 +24,11 @@ const RequireAuth = ({ children, role, user }) => {
 };
 
 // ── Shared layout (sidebar + navbar + content) ────────────────────────────────
-const AppLayout = ({ user, logout, title, children }) => (
+const AppLayout = ({ user, logout, title, children, theme, toggleTheme }) => (
   <div className="app-layout">
     <Sidebar user={user} onLogout={logout} />
     <div className="main-content" style={{ paddingTop: 64 }}>
-      <Navbar title={title} user={user} />
+      <Navbar title={title} user={user} theme={theme} toggleTheme={toggleTheme} />
       <main className="page-content">{children}</main>
     </div>
   </div>
@@ -37,6 +37,18 @@ const AppLayout = ({ user, logout, title, children }) => (
 const App = () => {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [authUser, setAuthUser] = useState(user);
+
+  // Theme state management
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const handleAuthSuccess = (u) => setAuthUser(u);
   const handleLogout = () => { logout(); setAuthUser(null); };
@@ -56,28 +68,28 @@ const App = () => {
         {/* ── Student routes ────────────────────────────────────────────────── */}
         <Route path="/student/exams" element={
           <RequireAuth user={currentUser} role="student">
-            <AppLayout user={currentUser} logout={handleLogout} title="Browse Exams">
+            <AppLayout user={currentUser} logout={handleLogout} title="Browse Exams" theme={theme} toggleTheme={toggleTheme}>
               <ExamList />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/student/exam/:id" element={
           <RequireAuth user={currentUser} role="student">
-            <AppLayout user={currentUser} logout={handleLogout} title="Active Exam">
+            <AppLayout user={currentUser} logout={handleLogout} title="Active Exam" theme={theme} toggleTheme={toggleTheme}>
               <ActiveExam />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/student/results/:attemptId" element={
           <RequireAuth user={currentUser} role="student">
-            <AppLayout user={currentUser} logout={handleLogout} title="Exam Results">
+            <AppLayout user={currentUser} logout={handleLogout} title="Exam Results" theme={theme} toggleTheme={toggleTheme}>
               <Results />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/student/history" element={
           <RequireAuth user={currentUser} role="student">
-            <AppLayout user={currentUser} logout={handleLogout} title="My Attempts">
+            <AppLayout user={currentUser} logout={handleLogout} title="My Attempts" theme={theme} toggleTheme={toggleTheme}>
               <History />
             </AppLayout>
           </RequireAuth>
@@ -86,28 +98,28 @@ const App = () => {
         {/* ── Admin routes ──────────────────────────────────────────────────── */}
         <Route path="/admin/questions" element={
           <RequireAuth user={currentUser} role="admin">
-            <AppLayout user={currentUser} logout={handleLogout} title="Question Bank">
+            <AppLayout user={currentUser} logout={handleLogout} title="Question Bank" theme={theme} toggleTheme={toggleTheme}>
               <AdminQuestions />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/admin/exams" element={
           <RequireAuth user={currentUser} role="admin">
-            <AppLayout user={currentUser} logout={handleLogout} title="Exam Management">
+            <AppLayout user={currentUser} logout={handleLogout} title="Exam Management" theme={theme} toggleTheme={toggleTheme}>
               <AdminExams />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/admin/leaderboard" element={
           <RequireAuth user={currentUser} role="admin">
-            <AppLayout user={currentUser} logout={handleLogout} title="Leaderboard">
+            <AppLayout user={currentUser} logout={handleLogout} title="Leaderboard" theme={theme} toggleTheme={toggleTheme}>
               <Leaderboard />
             </AppLayout>
           </RequireAuth>
         } />
         <Route path="/admin/insights" element={
           <RequireAuth user={currentUser} role="admin">
-            <AppLayout user={currentUser} logout={handleLogout} title="Question Insights">
+            <AppLayout user={currentUser} logout={handleLogout} title="Question Insights" theme={theme} toggleTheme={toggleTheme}>
               <Insights />
             </AppLayout>
           </RequireAuth>

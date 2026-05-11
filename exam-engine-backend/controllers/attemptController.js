@@ -19,7 +19,7 @@ const submitAttempt = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { examId, answers, timeTaken } = req.body;
+    const { examId, answers, timeTaken, status } = req.body;
 
     // Prevent duplicate submissions for the same exam
     const existing = await Attempt.findOne({
@@ -45,6 +45,7 @@ const submitAttempt = async (req, res) => {
             exam:      examId,
             answers,
             timeTaken,
+            status:    status || 'completed'
           },
         ],
         { session } // pass session so this write is part of the transaction
@@ -80,6 +81,7 @@ const submitAttempt = async (req, res) => {
           exam:      examId,
           answers,
           timeTaken,
+          status:    status || 'completed'
         });
 
         await User.findByIdAndUpdate(
@@ -111,6 +113,7 @@ const submitAttempt = async (req, res) => {
       score:        attempt.score,
       correct:      attempt.correctAnswers,
       total:        attempt.totalQuestions,
+      status:       attempt.status,
       transactional: usedTransaction,
     });
 
@@ -168,4 +171,26 @@ const getAttemptById = async (req, res) => {
   }
 };
 
-module.exports = { submitAttempt, getMyAttempts, getAttemptById };
+const Violation = require('../models/Violation');
+
+/**
+ * POST /api/attempts/violation
+ * Log a violation during a proctored exam.
+ */
+const logViolation = async (req, res) => {
+  try {
+    const { examId, type } = req.body;
+    const violation = await Violation.create({
+      user: req.user._id,
+      exam: examId,
+      type
+    });
+    logger.warn('Proctoring violation logged', { userId: req.user._id, examId, type });
+    res.status(201).json(violation);
+  } catch (err) {
+    logger.error('logViolation error', { userId: req.user._id, message: err.message });
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { submitAttempt, getMyAttempts, getAttemptById, logViolation };
